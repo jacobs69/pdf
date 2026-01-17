@@ -155,11 +155,11 @@ export default function ProjectionsScreen() {
           {/* Next Button - Now part of scroll content */}
           <View style={styles.nextButtonContainer}>
             <TouchableOpacity style={styles.nextButton} onPress={() => {
-              // Save exit strategies data
-              const projects = useProjectStore.getState().projects;
-              if (projects.length > 0) {
-                const lastProject = projects[projects.length - 1];
-                useProjectStore.getState().updateProject(lastProject._id, {
+              // Save exit strategies data to temp project
+              const store = useProjectStore.getState();
+              const tempProject = store.tempProject;
+              if (tempProject) {
+                store.updateProject(tempProject._id, {
                   exitStrategies: {
                     stp: {
                       moderate: { percent: '0%', val: 'AED 0' },

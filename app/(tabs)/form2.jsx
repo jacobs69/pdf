@@ -74,15 +74,20 @@ export default function PaymentDetailsScreen() {
   const [flipAtError, setFlipAtError] = useState(false);
   const [percentageError, setPercentageError] = useState(false);
 
-  const [installments, setInstallments] = useState([
-    { id: 1, displayId: "1", month: 'Nov', year: '2025', percent: 5, type: 'Down Payment' },
-    { id: 2, displayId: "2", month: 'Nov', year: '2025', percent: 30, type: 'During Construction' },
-    { id: 3, displayId: "3", month: 'Nov', year: '2025', percent: 5, type: 'During Construction' },
-    { id: 4, displayId: "4", month: 'Nov', year: '2025', percent: 50, type: 'On Handover' },
-  ]);
+  const [installments, setInstallments] = useState([]);
 
   // State for managing the custom dropdown
   const [activeDropdownId, setActiveDropdownId] = useState(null);
+
+  // --- Load existing data on mount ---
+  React.useEffect(() => {
+    const tempProject = useProjectStore.getState().tempProject;
+    if (tempProject && tempProject.paymentPlan && tempProject.paymentPlan.installments) {
+      setInstallments(tempProject.paymentPlan.installments);
+      setFlipAt(tempProject.paymentPlan.flipAtPercent ? `${tempProject.paymentPlan.flipAtPercent}%` : "35%");
+      setHandoverAt(tempProject.paymentPlan.handoverAtPercent ? `${tempProject.paymentPlan.handoverAtPercent}%` : "70%");
+    }
+  }, []);
 
   // --- Computed Values ---
   const totalPercent = useMemo(() => {
@@ -131,19 +136,29 @@ export default function PaymentDetailsScreen() {
   const addInstallment = () => {
     const newId = installments.length > 0 ? Math.max(...installments.map(i => i.id)) + 1 : 1;
     const nextDisplayId = String(installments.length + 1);
+    // First installment is always Down Payment, others default to During Construction
+    const isFirstInstallment = installments.length === 0;
     const newInstallment = {
       id: newId,
       displayId: nextDisplayId,
       month: 'Dec',
       year: '2025',
-      percent: 0,
-      type: 'During Construction',
+      percent: isFirstInstallment ? 10 : 0,
+      type: isFirstInstallment ? 'Down Payment' : 'During Construction',
     };
     setInstallments([...installments, newInstallment]);
   };
 
   const removeInstallment = (id) => {
-    setInstallments(installments.filter((item) => item.id !== id));
+    const filtered = installments.filter((item) => item.id !== id);
+    // Re-index displayIds after removal and ensure first is Down Payment
+    const reindexed = filtered.map((item, index) => ({
+      ...item,
+      displayId: String(index + 1),
+      type: index === 0 ? 'Down Payment' : item.type,
+      percent: index === 0 ? 10 : item.percent,
+    }));
+    setInstallments(reindexed);
   };
 
   const updateInstallment = (id, field, value) => {
@@ -179,17 +194,14 @@ export default function PaymentDetailsScreen() {
       </View>
 
       {/* Click overlay to close type dropdowns only */}
-      {activeDropdownId !== null && !activeDropdownId.toString().startsWith('month-') && (
-        <TouchableWithoutFeedback onPress={() => setActiveDropdownId(null)}>
-          <View style={styles.overlay} />
-        </TouchableWithoutFeedback>
-      )}
+      {/* Removed overlay as it was blocking dropdown item clicks */}
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView 
           contentContainerStyle={styles.scrollContent} 
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          onScrollBeginDrag={() => setActiveDropdownId(null)}
         >
           
           {/* Top Configuration Section */}
@@ -319,10 +331,12 @@ export default function PaymentDetailsScreen() {
 
           {/* Installments List */}
           <View style={styles.listContainer}>
-            {installments.map((inst) => {
+            {installments.map((inst, index) => {
+              const isFirstInstallment = index === 0;
               const isTypeDropdownOpen = activeDropdownId === inst.id;
               const isMonthDropdownOpen = activeDropdownId === `month-${inst.id}`;
-              const isAnyDropdownOpen = isTypeDropdownOpen || isMonthDropdownOpen;
+              const isYearDropdownOpen = activeDropdownId === `year-${inst.id}`;
+              const isAnyDropdownOpen = isTypeDropdownOpen || isMonthDropdownOpen || isYearDropdownOpen;
               return (
                 <View key={inst.id} style={[
                   styles.listItem,
@@ -344,21 +358,26 @@ export default function PaymentDetailsScreen() {
                       >
                         <Text style={styles.monthText}>{inst.month}</Text>
                       </TouchableOpacity>
-                      <Text style={styles.yearText}> {inst.year}</Text>
+                      <TouchableOpacity 
+                        style={styles.yearDropdown}
+                        onPress={() => setActiveDropdownId(`year-${inst.id}`)}
+                      >
+                        <Text style={styles.yearText}>{inst.year}</Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
 
                   {/* Percentage Input */}
                   <View style={styles.percentInputWrapper}>
                     <TextInput
-                      style={[styles.percentInput, inst.percent > 10 && styles.percentInputError]}
+                      style={[styles.percentInput, totalPercent > 100 && styles.percentInputError]}
                       value={String(inst.percent)}
                       onChangeText={(text) => updateInstallment(inst.id, 'percent', Number(text))}
                       placeholder="0"
                       placeholderTextColor="#64748b"
                       keyboardType="numeric"
                     />
-                    <Text style={[styles.percentSuffix, inst.percent > 10 && styles.percentSuffixError]}>%</Text>
+                    <Text style={[styles.percentSuffix, totalPercent > 100 && styles.percentSuffixError]}>%</Text>
                   </View>
 
                   {/* Type Dropdown / Label */}
@@ -366,7 +385,7 @@ export default function PaymentDetailsScreen() {
                     <TouchableOpacity 
                       style={styles.typeRow}
                       onPress={() => {
-                        if (inst.type !== 'Down Payment') {
+                        if (!isFirstInstallment) {
                           setActiveDropdownId(isTypeDropdownOpen ? null : inst.id);
                         }
                       }}
@@ -374,30 +393,55 @@ export default function PaymentDetailsScreen() {
                       <Text style={styles.typeText} numberOfLines={1}>
                         {inst.type}
                       </Text>
-                      {inst.type !== 'Down Payment' && (
+                      {!isFirstInstallment && (
                         <Ionicons name="chevron-down" size={14} color="#F5F5F5" style={{ marginLeft: 1 }} />
                       )}
                     </TouchableOpacity>
 
                     {/* Custom Dropdown Menu */}
-                    {isTypeDropdownOpen && (
+                    {isTypeDropdownOpen && !isFirstInstallment && (
                       <View style={styles.dropdownMenu}>
                         <TouchableOpacity 
-                          style={styles.dropdownItem}
-                          onPress={() => updateInstallment(inst.id, 'type', 'During Construction')}
+                          style={[
+                            styles.dropdownItem,
+                            inst.type === 'During Construction' && styles.dropdownItemActive
+                          ]}
+                          onPress={() => {
+                            updateInstallment(inst.id, 'type', 'During Construction');
+                            setActiveDropdownId(null);
+                          }}
                         >
-                          <Text style={styles.dropdownItemText}>During Construction</Text>
+                          <Text style={[
+                            styles.dropdownItemText,
+                            inst.type === 'During Construction' && styles.dropdownItemTextActive
+                          ]}>
+                            During Construction
+                          </Text>
                         </TouchableOpacity>
                         <View style={styles.dropdownDivider} />
                         <TouchableOpacity 
-                          style={styles.dropdownItem}
-                          onPress={() => updateInstallment(inst.id, 'type', 'On Handover')}
+                          style={[
+                            styles.dropdownItem,
+                            inst.type === 'On Handover' && styles.dropdownItemActive
+                          ]}
+                          onPress={() => {
+                            updateInstallment(inst.id, 'type', 'On Handover');
+                            setActiveDropdownId(null);
+                          }}
                         >
-                          <Text style={styles.dropdownItemText}>On Handover</Text>
+                          <Text style={[
+                            styles.dropdownItemText,
+                            inst.type === 'On Handover' && styles.dropdownItemTextActive
+                          ]}>
+                            On Handover
+                          </Text>
                         </TouchableOpacity>
                       </View>
                     )}
                   </View>
+
+                  {/* Year Dropdown */}
+                  {/* Year selection is now handled by modal */}
 
                   {/* Remove Action */}
                   <TouchableOpacity 
@@ -417,7 +461,7 @@ export default function PaymentDetailsScreen() {
             )}
 
             {/* Percentage Error Message - appears after all installments */}
-            {installments.some(inst => inst.percent > 10) && installments.length > 0 && (
+            {totalPercent > 100 && installments.length > 0 && (
               <Text style={styles.percentageErrorTextEnd}>
                 (percentage must be equal to 100%)
               </Text>
@@ -435,19 +479,19 @@ export default function PaymentDetailsScreen() {
           {/* Next Button - Now part of scroll content */}
           <View style={styles.nextButtonContainer}>
             <TouchableOpacity 
-              style={[styles.nextButton, installments.some(inst => inst.percent > 10) && styles.nextButtonDisabled]} 
+              style={[styles.nextButton, percentageError && styles.nextButtonDisabled]} 
               onPress={() => {
                 // Only proceed if validation passes
-                if (installments.some(inst => inst.percent > 10)) {
+                if (percentageError) {
                   return;
                 }
-                // Save payment plan data to the last created project
-                const projects = useProjectStore.getState().projects;
-                if (projects.length > 0) {
-                  const lastProject = projects[projects.length - 1];
+                // Save payment plan data to the temp project
+                const store = useProjectStore.getState();
+                const tempProject = store.tempProject;
+                if (tempProject) {
                   const flipAtNum = parseInt(flipAt.replace('%', '')) || 0;
                   const handoverAtNum = parseInt(handoverAt.replace('%', '')) || 0;
-                  useProjectStore.getState().updateProject(lastProject._id, {
+                  store.updateProject(tempProject._id, {
                     paymentPlan: {
                       duringConstructionPercent: flipAtNum,
                       onHandoverPercent: handoverAtNum,
@@ -518,6 +562,60 @@ export default function PaymentDetailsScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Year Selection Modal */}
+      <Modal
+        visible={activeDropdownId !== null && activeDropdownId.toString().startsWith('year-')}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setActiveDropdownId(null)}
+      >
+        <TouchableOpacity 
+          style={styles.modalBackdrop} 
+          activeOpacity={1} 
+          onPress={() => setActiveDropdownId(null)}
+        >
+          <View style={styles.monthModalMenu}>
+            <FlatList
+              data={Array.from({ length: 10 }, (_, i) => (new Date().getFullYear() + i).toString())}
+              keyExtractor={(item) => item}
+              renderItem={({ item, index }) => {
+                const currentInstallmentId = activeDropdownId ? parseInt(activeDropdownId.toString().replace('year-', '')) : null;
+                const currentInstallment = installments.find(inst => inst.id === currentInstallmentId);
+                const isSelected = currentInstallment?.year === item;
+                const yearData = Array.from({ length: 10 }, (_, i) => (new Date().getFullYear() + i).toString());
+                
+                return (
+                  <View>
+                    <TouchableOpacity
+                      style={[styles.monthModalItem, isSelected && styles.monthModalItemSelected]}
+                      onPress={() => {
+                        if (currentInstallmentId) {
+                          updateInstallment(currentInstallmentId, 'year', item);
+                          setActiveDropdownId(null);
+                        }
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.monthModalItemText, isSelected && styles.monthModalItemTextSelected]}>
+                        {item}
+                      </Text>
+                      {isSelected && (
+                        <View style={styles.checkIcon}>
+                          <Ionicons name="checkmark" size={16} color="#60a5fa" />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                    {index < yearData.length - 1 && <View style={styles.monthModalSeparator} />}
+                  </View>
+                );
+              }}
+              bounces={false}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -532,8 +630,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginBottom: 10,
+    paddingVertical: 8,
+    marginBottom: 0,
   },
   backButton: { padding: 4 },
   headerTitleContainer: { alignItems: 'center' },
@@ -565,7 +663,7 @@ const styles = StyleSheet.create({
 
   scrollContent: { 
     paddingHorizontal: 16, // 16px left and right margins
-    paddingVertical: 16, // Keep vertical padding
+    paddingVertical: 12, // Reduced from 16 to fit properly
     paddingBottom: 25, // Reduced from 30 to 25
   },
 
@@ -890,6 +988,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
   },
+  yearDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    marginLeft: 8,
+  },
   monthText: {
     color: '#F5F5F5',
     fontSize: 14,
@@ -1029,9 +1133,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
   },
+  dropdownItemActive: {
+    backgroundColor: 'rgba(238, 251, 115, 0.15)',
+  },
   dropdownItemText: {
     color: '#e2e8f0',
     fontSize: 14,
+  },
+  dropdownItemTextActive: {
+    color: '#EEFB73',
+    fontWeight: '600',
   },
   dropdownDivider: {
     height: 1,

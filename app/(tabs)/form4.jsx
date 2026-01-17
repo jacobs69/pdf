@@ -146,13 +146,15 @@ export default function RatingCardScreen() {
           <TouchableOpacity
             style={styles.nextButton}
             onPress={() => {
-              // Save ratings data
-              const projects = useProjectStore.getState().projects;
-              if (projects.length > 0) {
-                const lastProject = projects[projects.length - 1];
-                useProjectStore.getState().updateProject(lastProject._id, {
+              // Save ratings data and complete project
+              const store = useProjectStore.getState();
+              const tempProject = store.tempProject;
+              if (tempProject) {
+                store.updateProject(tempProject._id, {
                   ratings: scores
                 });
+                // Complete the project (move from temp to main)
+                store.completeProject(tempProject._id);
               }
               router.push('/home');
             }}

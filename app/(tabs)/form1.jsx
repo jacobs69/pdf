@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -148,6 +148,8 @@ export default function AddProjectScreen() {
   // Form State
   const [projectName, setProjectName] = useState("");
   const [developer, setDeveloper] = useState("");
+  const [developerCustom, setDeveloperCustom] = useState("");
+  const [isDeveloperCustom, setIsDeveloperCustom] = useState(false);
   const [location, setLocation] = useState("");
   const [propertyType, setPropertyType] = useState("Apartment");
   const [bedrooms, setBedrooms] = useState("");
@@ -181,9 +183,10 @@ export default function AddProjectScreen() {
 
   // Validation function
   const validateForm = () => {
+    const developerValue = isDeveloperCustom ? developerCustom.trim() : developer.trim();
     const newErrors = {
       projectName: !projectName.trim(),
-      developer: !developer.trim(),
+      developer: !developerValue,
       location: !location.trim(),
       bedrooms: !bedrooms.trim(),
       status: !status.trim(),
@@ -203,9 +206,10 @@ export default function AddProjectScreen() {
 
   // Check if form is valid (all required fields filled)
   const isFormValid = () => {
+    const developerValue = isDeveloperCustom ? developerCustom.trim() : developer.trim();
     return (
       projectName.trim() &&
-      developer.trim() &&
+      developerValue &&
       location.trim() &&
       bedrooms.trim() &&
       status.trim() &&
@@ -222,11 +226,11 @@ export default function AddProjectScreen() {
     if (validateForm()) {
       // Save form1 data to store
       const addProject = useProjectStore.getState().addProject;
-      const projectId = `project_${Date.now()}`;
+      const finalDeveloper = isDeveloperCustom ? developerCustom : developer;
       
       addProject({
         projectName,
-        developer,
+        developer: finalDeveloper,
         location,
         propertyType,
         bedrooms: parseInt(bedrooms),
@@ -328,32 +332,39 @@ export default function AddProjectScreen() {
             />
           </View>
 
-          {/* Developer Dropdown */}
+          {/* Developer Dropdown with Custom Option */}
           <View style={styles.fieldContainer}>
             <View style={styles.labelRow}>
               <Text style={styles.label}>Developer</Text>
               {errors.developer && showErrors && <Text style={styles.requiredAsterisk}>*</Text>}
             </View>
-            <TouchableOpacity 
-              style={[
-                styles.dropdownButton, 
-                styles.dropdownFullWidth,
-                errors.developer && showErrors && styles.inputError
-              ]}
-              onPress={() => setShowDevelopers(true)}
-              activeOpacity={0.7}
-            >
-              <Text 
+            <View style={styles.inputWrapper}>
+              <TextInput 
                 style={[
-                  styles.inputText,
-                  !developer && { color: COLORS.textGrey }
-                ]} 
-                numberOfLines={1}
+                  styles.input, 
+                  styles.inputFullWidth,
+                  errors.developer && showErrors && styles.inputError
+                ]}
+                value={isDeveloperCustom ? developerCustom : developer}
+                onChangeText={(text) => {
+                  setIsDeveloperCustom(true);
+                  setDeveloperCustom(text);
+                  // Clear error if text is entered
+                  if (text.trim()) {
+                    setErrors(prev => ({ ...prev, developer: false }));
+                  }
+                }}
+                placeholder="Enter or select developer"
+                placeholderTextColor={COLORS.textGrey}
+                editable={true}
+              />
+              <TouchableOpacity 
+                style={styles.dropdownArrow}
+                onPress={() => setShowDevelopers(true)}
               >
-                {developer || 'Select Developer'}
-              </Text>
-              <Ionicons name="chevron-down" size={20} color={COLORS.textGrey} />
-            </TouchableOpacity>
+                <Ionicons name="chevron-down" size={20} color={COLORS.textGrey} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Location */}
@@ -588,8 +599,11 @@ export default function AddProjectScreen() {
         isOpen={showDevelopers}
         onClose={() => setShowDevelopers(false)}
         items={DEVELOPERS}
-        selectedItem={developer}
-        onSelect={setDeveloper}
+        selectedItem={isDeveloperCustom ? developerCustom : developer}
+        onSelect={(item) => {
+          setDeveloper(item);
+          setIsDeveloperCustom(false);
+        }}
       />
 
       <SelectionModal 
@@ -635,7 +649,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    marginBottom: 6, // Reduced from 12 to 6 to bring header closer to content
+    marginBottom: 10,
   },
   backButton: {
     padding: 4,
@@ -664,7 +678,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16, // 16px left and right margins
-    paddingVertical: 25, // Increased from 15 to 25 to move content down
+    paddingVertical: 10, // Reduced to match form3
     paddingBottom: 40, // Normal padding since button is now in scroll content
     alignItems: 'center', // Center all content in the scroll view
   },
@@ -771,6 +785,11 @@ const styles = StyleSheet.create({
   inputWrapper: {
     position: 'relative',
     justifyContent: 'center',
+  },
+  dropdownArrow: {
+    position: 'absolute',
+    right: 12,
+    padding: 8,
   },
   inputIconContainer: {
     position: 'absolute',
