@@ -1,80 +1,94 @@
 import React from "react";
-import { View, Text, StyleSheet, Dimensions } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  StatusBar,
+} from "react-native";
 
 export default function Breakdown({ project, projectDetails }) {
-  if (!project || !projectDetails) return null;
+  const calculateBreakdown = () => {
+    const price = project?.price || 1197013;
+    const dldPercent = project?.dldPercent || 4;
+    const serviceChargePerSqFt = project?.serviceChargePerSqFt || 11;
+    const areaSqFt = project?.areaSqFt || 776;
+    
+    const dldFee = (price * dldPercent) / 100;
+    const serviceCharges = serviceChargePerSqFt * areaSqFt;
+    const agentCommission = price * 0.02; // 2% agent commission
+    const legalFees = 5000; // Fixed legal fees
+    
+    return {
+      propertyPrice: price,
+      dldFee,
+      serviceCharges,
+      agentCommission,
+      legalFees,
+      total: price + dldFee + serviceCharges + agentCommission + legalFees
+    };
+  };
 
-  const dldAmount = projectDetails.dld;
-  const netTotal = project.price + (dldAmount * 1000);
+  const breakdown = calculateBreakdown();
 
   return (
-    <View style={styles.page}>
-      <View style={styles.container}>
-        {/* Title */}
-        <Text style={styles.title}>Breakdown</Text>
+    <View style={styles.container}>
+      {/* Title */}
+      <Text style={styles.title}>Breakdown</Text>
 
-        {/* Card */}
-        <View style={styles.card}>
-          {/* Header Row */}
-          <View style={[styles.row, styles.headerRow]}>
-            <View style={styles.leftCol}>
-              <Text style={styles.headerText}>Details</Text>
-            </View>
-            <View style={styles.rightCol}>
-              <Text style={styles.headerText}>AED</Text>
-            </View>
-          </View>
+      {/* Card */}
+      <View style={styles.card}>
+        {/* Header Row */}
+        <View style={[styles.row, styles.headerRow]}>
+          <Text style={[styles.leftCol, styles.headerText]}>Details</Text>
+          <View style={styles.verticalDivider} />
+          <Text style={[styles.rightCol, styles.headerText]}>AED</Text>
+        </View>
 
-          <View style={styles.horizontalDivider} />
+        <Divider />
 
-          {/* Property Price */}
-          <TableRow label="Property Price" value={(project.price / 1000000).toFixed(2) + "mn"} />
+        {/* Rows */}
+        <TableRow label="Property Price" value={breakdown.propertyPrice.toLocaleString()} />
+        <Divider />
+        <TableRow label="DLD Fee (4%)" value={breakdown.dldFee.toLocaleString()} />
+        <Divider />
+        <TableRow label="Service Charges" value={breakdown.serviceCharges.toLocaleString()} />
+        <Divider />
+        <TableRow label="Agent Commission (2%)" value={breakdown.agentCommission.toLocaleString()} />
+        <Divider />
+        <TableRow label="Legal Fees" value={breakdown.legalFees.toLocaleString()} />
+        <Divider />
 
-          {/* DLD */}
-          <TableRow label="DLD (4%)" value={dldAmount + "k"} />
-
-          {/* Service Charges */}
-          <TableRow label="Service Charges/Sq Ft" value={"AED " + projectDetails.serviceCharge} />
-
-          {/* Net Total */}
-          <View style={[styles.row, styles.netRow]}>
-            <View style={styles.leftCol}>
-              <Text style={styles.netText}>Net Total</Text>
-            </View>
-            <View style={styles.rightCol}>
-              <Text style={styles.netText}>{(netTotal / 1000000).toFixed(2)}mn</Text>
-            </View>
-          </View>
+        {/* Net Total */}
+        <View style={[styles.row, styles.netRow]}>
+          <Text style={[styles.leftCol, styles.netText]}>Net Total</Text>
+          <View style={styles.verticalDivider} />
+          <Text style={[styles.rightCol, styles.netText]}>
+            {breakdown.total.toLocaleString()}.00
+          </Text>
         </View>
       </View>
     </View>
   );
 }
 
+/* ---------- Components ---------- */
 const TableRow = ({ label, value }) => (
-  <View>
-    <View style={styles.row}>
-      <View style={styles.leftCol}>
-        <Text style={styles.cellText}>{label}</Text>
-      </View>
-      <View style={styles.rightCol}>
-        <Text style={styles.cellText}>{value}</Text>
-      </View>
-    </View>
-    <View style={styles.horizontalDivider} />
+  <View style={styles.row}>
+    <Text style={[styles.leftCol, styles.cellText]}>{label}</Text>
+    <View style={styles.verticalDivider} />
+    <Text style={[styles.rightCol, styles.cellText]}>{value}</Text>
   </View>
 );
 
+const Divider = () => <View style={styles.horizontalDivider} />;
+
+/* ---------- Styles ---------- */
 const styles = StyleSheet.create({
-  page: {
-    minHeight: Dimensions.get("window").height,
-    backgroundColor: "#0F1115",
-  },
   container: {
     flex: 1,
     backgroundColor: "#0F1115",
     paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingTop: 0,
   },
   title: {
     color: "#FFFFFF",
@@ -103,7 +117,7 @@ const styles = StyleSheet.create({
   rightCol: {
     flex: 1,
     paddingRight: 16,
-    alignItems: "flex-end",
+    textAlign: "right",
   },
   headerText: {
     color: "#FFFFFF",
@@ -121,6 +135,11 @@ const styles = StyleSheet.create({
     color: "#EEFB73",
     fontSize: 14,
     fontWeight: "600",
+  },
+  verticalDivider: {
+    width: 1,
+    height: "100%",
+    backgroundColor: "#3A3D42",
   },
   horizontalDivider: {
     height: 1,

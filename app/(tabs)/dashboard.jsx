@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import PdfModal from "../../components/PdfModal";
 import { useProjectStore } from "../../store/projectStore";
+import { generateProjectPDF } from "../../utils/pdfGenerator";
 
 
 // --- Projects Data ---

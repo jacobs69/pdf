@@ -1,37 +1,843 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, Dimensions, Image } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import PropertyReport from "./PropertyReport";
-import PaymentTimeline from "./PaymentTimeline";
-import Breakdown from "./Breakdown";
-import ReportDisclaimer from "./ReportDisclaimer";
+import {
+  View,
+  Text,
+  StyleSheet,
+  StatusBar,
+  ScrollView,
+  Dimensions,
+  Image,
+} from "react-native";
+import { Ionicons, Feather } from "@expo/vector-icons";
+import { LinearGradient } from 'expo-linear-gradient';
 
-const { height: screenHeight } = Dimensions.get("window");
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+
+// A4 dimensions (scaled to fit mobile screen while maintaining aspect ratio)
+const A4_ASPECT_RATIO = 297 / 210; // height / width
+const A4_WIDTH = screenWidth;
+const A4_HEIGHT = A4_WIDTH * A4_ASPECT_RATIO * 1.5; // Increased height by 50%
+const A4_HEIGHT_PAGE1 = A4_WIDTH * A4_ASPECT_RATIO * 1.1; // Smaller height for first page
 
 export default function PropertyPdf({ project, projectDetails }) {
+  // Payment Timeline Data - can be made dynamic based on project data
+  const TIMELINE_DATA = [
+    { date: "Oct 25", step: 1, percent: "5%", amount: "61,250", status: "default" },
+    { date: "Nov 25", step: 2, percent: "15%", amount: "183,750", status: "default" },
+    { date: "Jan 26", step: 3, percent: "25%", amount: "122,500", status: "default" },
+    { date: "Jan 26", step: 4, percent: "35%", amount: "122,500", status: "green" },
+    { date: "Jan 26", step: 5, percent: "45%", amount: "122,500", status: "green" },
+    { date: "Jan 26", step: 6, percent: "55%", amount: "122,500", status: "green" },
+    { date: "Jan 26", step: 7, percent: "65%", amount: "122,500", status: "key" },
+    { date: "Jan 26", step: 8, percent: "100%", amount: "122,500", status: "flag" },
+  ];
+
+  // Log the current PDF dimensions
+  console.log(`PDF Resolution: ${A4_WIDTH} x ${A4_HEIGHT} pixels`);
+
   return (
-    <ScrollView style={styles.scrollContainer}>
+    <ScrollView 
+      style={styles.scrollContainer}
+      pagingEnabled={true}
+      showsVerticalScrollIndicator={false}
+    >
+      <StatusBar barStyle="light-content" />
+      
       {/* Page 1: Disclaimer */}
-      <ReportDisclaimer />
+      <View style={[styles.page, styles.container, { height: A4_HEIGHT_PAGE1 }]}>
+        {/* Center Logo */}
+        <View style={styles.centerBlock}>
+          <Image
+            source={require("../../assets/images/png/L-logo.png")}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+
+          {/* Purple Box with Person Info */}
+          <LinearGradient
+            colors={["#555C72", "#240B36"]}
+            style={styles.personCard}
+          >
+            <Image
+              source={require("../../assets/images/png/pdf-profile.png")}
+              style={styles.personImage}
+              resizeMode="cover"
+            />
+            <View style={styles.personInfo}>
+              <Text style={styles.personName}>Arpit Aryan Gupta</Text>
+              <View style={styles.emailRow}>
+                <Ionicons name="mail" size={16} color="#FFFFFF" />
+                <Text style={styles.personEmail}>arpit@liyantis.com</Text>
+              </View>
+            </View>
+          </LinearGradient>
+        </View>
+
+        {/* Disclaimer */}
+        <View style={styles.disclaimerBlock}>
+          <View style={styles.disclaimerHeader}>
+            <Text style={styles.disclaimerTitle}>Disclaimer</Text>
+            <Ionicons
+              name="information-circle-outline"
+              size={16}
+              color="#9CA3AF"
+              style={{ marginLeft: 6 }}
+            />
+          </View>
+          <Text style={styles.disclaimerText}>
+            All investment figures, estimates, and projections presented here are
+            based on data available at the time of preparation and are subject to
+            change due to market conditions, developer revisions, or agent
+            assessment. Liyantis shall not be held responsible for any financial
+            decisions made solely based on this report.
+          </Text>
+        </View>
+      </View>
+
+      {/* Page Separator */}
+      <View style={styles.pageSeparator} />
 
       {/* Page 2: Property Report */}
-      <PropertyReport project={project} projectDetails={projectDetails} />
+      <View style={[styles.page, { height: A4_HEIGHT }]}>
+        <View style={[styles.propertyReportContainer, { height: A4_HEIGHT }]}>
+          {/* Header with Gradient */}
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.4)', 'rgba(24, 26, 32, 0.7)']}
+            style={styles.headerGradient}
+          >
+            <View style={styles.header}>
+              <View>
+                <Text style={styles.headerTitle}>Property report</Text>
+                <Text style={styles.headerSub}>
+                  generated by Arpit Aryan Gupta on {new Date().toLocaleDateString('en-GB')}
+                </Text>
+              </View>
+              <View style={styles.logoWrap}>
+                <View style={styles.logoContainer}>
+                  <View style={styles.logoCircle}>
+                    <Text style={styles.logoL}>L</Text>
+                  </View>
+                  <Text style={styles.logoText}>LIYANTIS</Text>
+                </View>
+              </View>
+            </View>
+          </LinearGradient>
+
+          {/* Property Name */}
+          <View style={styles.centerBlockReport}>
+            <Text style={[styles.propertyName, { marginTop: 20 }]}>
+              {project?.projectName || "The Weave"}, {project?.location || "JVC"}
+            </Text>
+            <Text style={styles.builder}>by {project?.developer || "Al Ghurair"}</Text>
+            <View style={styles.priceContainer}>
+              <Image
+                source={require("../../assets/images/png/dirhams.png")}
+                style={styles.dirhamIcon}
+                resizeMode="contain"
+              />
+              <Text style={styles.price}>
+                {(project?.price || 1197013).toLocaleString()}.00
+              </Text>
+            </View>
+          </View>
+
+          {/* Rating */}
+          <View style={styles.ratingRow}>
+            <View style={styles.ratingContainer}>
+              <View style={styles.ratingCircleBackground} />
+              <View style={styles.ratingCircleProgress} />
+              <View style={styles.ratingCircleInner}>
+                <Text style={styles.ratingText}>{projectDetails?.rating || "7.5"}</Text>
+              </View>
+            </View>
+            <Text style={styles.ratingDesc}>
+              The final project rating is an aggregate score calculated from all the
+              individual parameters assessed by the agent.
+            </Text>
+          </View>
+
+          {/* Property Details */}
+          <Text style={styles.sectionTitle}>Property details</Text>
+          <View style={styles.detailsRow}>
+            <DetailItem icon="home-outline" label="Apartment" />
+            <DetailItem icon="bed-outline" label={project?.bedrooms?.toString() || "1"} />
+            <DetailItem label={`${project?.areaSqFt || 776} ft²`} sub="Area" />
+            <DetailItem 
+              label={Math.round((project?.price || 1197013) / (project?.areaSqFt || 776)).toString()} 
+              sub="Price/ft²" 
+            />
+          </View>
+
+          {/* Exit Strategies */}
+          <View style={styles.card}>
+            <View style={styles.exitTabs}>
+              <Text style={[styles.exitTab, styles.exitTabActive]}>Exit Strategies</Text>
+              <Text style={styles.exitTab}>Moderate</Text>
+              <Text style={styles.exitTab}>Conservative</Text>
+              <Text style={styles.exitTab}>Optimistic</Text>
+            </View>
+            <View style={styles.table}>
+              <TableRowItem
+                title="Short Term Potential"
+                moderate={projectDetails?.exitStrategies?.stp?.moderate?.percent || "25.46%"}
+                moderateAmt={projectDetails?.exitStrategies?.stp?.moderate?.val || "137,24,000"}
+                cons={projectDetails?.exitStrategies?.stp?.conservative?.percent || "7.87%"}
+                consAmt={projectDetails?.exitStrategies?.stp?.conservative?.val || "42,42,000"}
+                opt={projectDetails?.exitStrategies?.stp?.optimistic?.percent || "34.46%"}
+                optAmt={projectDetails?.exitStrategies?.stp?.optimistic?.val || "185,75,000"}
+              />
+              <TableRowItem
+                title="Medium Term Potential"
+                moderate={projectDetails?.exitStrategies?.mtp?.moderate?.percent || "25.46%"}
+                moderateAmt={projectDetails?.exitStrategies?.mtp?.moderate?.val || "137,24,000"}
+                cons={projectDetails?.exitStrategies?.mtp?.conservative?.percent || "7.87%"}
+                consAmt={projectDetails?.exitStrategies?.mtp?.conservative?.val || "42,42,000"}
+                opt={projectDetails?.exitStrategies?.mtp?.optimistic?.percent || "34.46%"}
+                optAmt={projectDetails?.exitStrategies?.mtp?.optimistic?.val || "185,75,000"}
+              />
+              <TableRowItem
+                title="Long Term Potential"
+                moderate={projectDetails?.exitStrategies?.ltp?.moderate?.percent || "112%"}
+                moderateAmt={projectDetails?.exitStrategies?.ltp?.moderate?.val || "137,24,000"}
+                cons={projectDetails?.exitStrategies?.ltp?.conservative?.percent || "49.18%"}
+                consAmt={projectDetails?.exitStrategies?.ltp?.conservative?.val || "42,42,000"}
+                opt={projectDetails?.exitStrategies?.ltp?.optimistic?.percent || "160.32%"}
+                optAmt={projectDetails?.exitStrategies?.ltp?.optimistic?.val || "185,75,000"}
+                last
+              />
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* Page Separator */}
+      <View style={styles.pageSeparator} />
 
       {/* Page 3: Payment Timeline */}
-      <PaymentTimeline project={project} />
+      <View style={[styles.page, { height: A4_HEIGHT }]}>
+        <View style={[styles.paymentTimelineContainer, { height: A4_HEIGHT }]}>
+          {/* Header with Gradient */}
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.4)', 'rgba(24, 26, 32, 0.7)']}
+            style={styles.headerGradient}
+          >
+            <View style={styles.header}>
+              <View>
+                <Text style={styles.headerTitle}>Property report</Text>
+                <Text style={styles.headerSub}>
+                  generated by Arpit Aryan Gupta on {new Date().toLocaleDateString('en-GB')}
+                </Text>
+              </View>
+              <View style={styles.logoWrap}>
+                <View style={styles.logoContainer}>
+                  <View style={styles.logoCircle}>
+                    <Text style={styles.logoL}>L</Text>
+                  </View>
+                  <Text style={styles.logoText}>LIYANTIS</Text>
+                </View>
+              </View>
+            </View>
+          </LinearGradient>
 
-      {/* Page 4: Breakdown */}
-      <Breakdown project={project} projectDetails={projectDetails} />
+          {/* Title */}
+          <Text style={styles.title}>Payment Timeline</Text>
+
+          {/* Legend */}
+          <View style={styles.legendRow}>
+            <LegendDotItem color="#8DFF3F" label="Flip Ready" />
+            <LegendIconItem icon="key" iconType="Feather" label="Handover" />
+            <LegendIconItem icon="flag-outline" label="Last Installment" />
+          </View>
+
+          {/* Header */}
+          <View style={styles.headerRow}>
+            <Text style={[styles.headerText, { flex: 2 }]}>Date</Text>
+            <Text style={[styles.headerText, { flex: 2 }]}>Installments%</Text>
+            <Text style={[styles.headerText, { flex: 1, textAlign: "right" }]}>Amount</Text>
+          </View>
+
+          {/* Timeline */}
+          <View>
+            {TIMELINE_DATA.map((item, index) => (
+              <TimelineRowItem 
+                key={item.step.toString()} 
+                item={item} 
+                isLast={index === TIMELINE_DATA.length - 1} 
+              />
+            ))}
+          </View>
+        </View>
+      </View>
     </ScrollView>
   );
 }
 
+/* ---------- Component Functions ---------- */
+const DetailItem = ({ icon, label, sub }) => (
+  <View style={styles.detailItem}>
+    {icon && (
+      <Ionicons name={icon} size={20} color="#FFFFFF" style={{ marginBottom: 6 }} />
+    )}
+    <Text style={icon ? styles.detailValue : styles.detailValueNoIcon}>{label}</Text>
+    {sub && <Text style={styles.detailSub}>{sub}</Text>}
+  </View>
+);
+
+const TableRowItem = ({
+  title,
+  moderate,
+  moderateAmt,
+  cons,
+  consAmt,
+  opt,
+  optAmt,
+  last,
+}) => (
+  <View style={[styles.tableRow, last && { borderBottomWidth: 0 }]}>
+    <View style={styles.tableLeft}>
+      <Text style={styles.tableTitle}>{title}</Text>
+    </View>
+    <View style={styles.tableCol}>
+      <Text style={styles.percent}>{moderate}</Text>
+      <Text style={styles.amount}>{moderateAmt}</Text>
+    </View>
+    <View style={styles.tableCol}>
+      <Text style={styles.percent}>{cons}</Text>
+      <Text style={styles.amount}>{consAmt}</Text>
+    </View>
+    <View style={styles.tableCol}>
+      <Text style={styles.percent}>{opt}</Text>
+      <Text style={styles.amount}>{optAmt}</Text>
+    </View>
+  </View>
+);
+
+const TimelineRowItem = ({ item, isLast }) => {
+  const isGreen = item.status === "green";
+  const isKey = item.status === "key";
+  const isFlag = item.status === "flag";
+
+  return (
+    <View style={styles.row}>
+      <Text style={styles.date}>{item.date}</Text>
+      <View style={styles.timelineCol}>
+        {!isLast && <View style={styles.dottedLine} />}
+        {isGreen && <View style={styles.greenDot} />}
+        {isKey && (
+          <View style={styles.iconCircle}>
+            <Feather name="key" size={14} color="#FFFFFF" />
+          </View>
+        )}
+        {isFlag && (
+          <View style={styles.iconCircle}>
+            <Ionicons name="flag-outline" size={14} color="#FFFFFF" />
+          </View>
+        )}
+        {!isGreen && !isKey && !isFlag && <View style={styles.grayDot} />}
+      </View>
+      <Text style={styles.step}>{item.step}</Text>
+      <Text style={styles.percentTimeline}>{item.percent}</Text>
+      <Text style={styles.amountTimeline}>{item.amount}</Text>
+    </View>
+  );
+};
+
+const LegendDotItem = ({ color, label }) => (
+  <View style={styles.legendItem}>
+    <View style={[styles.legendDot, { backgroundColor: color }]} />
+    <Text style={styles.legendText}>{label}</Text>
+  </View>
+);
+
+const LegendIconItem = ({ icon, iconType = "Ionicons", label }) => (
+  <View style={styles.legendItem}>
+    {iconType === "Feather" ? (
+      <Feather name={icon} size={14} color="#FFFFFF" />
+    ) : (
+      <Ionicons name={icon} size={14} color="#FFFFFF" />
+    )}
+    <Text style={styles.legendText}>{label}</Text>
+  </View>
+);
+
+/* ---------- Styles ---------- */
 const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
+    backgroundColor: "#181A20",
+  },
+  pageSeparator: {
+    height: 40,
     backgroundColor: "#0F1115",
+    width: "100%",
   },
   page: {
-    minHeight: screenHeight,
+    width: A4_WIDTH,
+    height: A4_HEIGHT,
+    alignSelf: 'center',
+  },
+  container: {
+    backgroundColor: "#181A20",
+    paddingHorizontal: 24,
+    paddingTop: 0,
+    width: A4_WIDTH,
+    height: A4_HEIGHT,
+  },
+  propertyReportContainer: {
+    backgroundColor: "#181A20",
+    paddingHorizontal: 20,
+    paddingTop: 0,
+    width: A4_WIDTH,
+    height: A4_HEIGHT,
+  },
+  paymentTimelineContainer: {
+    backgroundColor: "#181A20",
+    paddingHorizontal: 20,
+    paddingTop: 0,
+    width: A4_WIDTH,
+    height: A4_HEIGHT,
+  },
+  centerBlock: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: 0,
+    paddingBottom: 60,
+  },
+  centerBlockReport: {
+    alignItems: "center",
+  },
+  logoImage: {
+    width: 130,
+    height: 130,
+  },
+  customLogoContainer: {
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: "#FF6B00",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  customLogoText: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+    letterSpacing: 1,
+  },
+  brandText: {
+    color: "#FFFFFF",
+    fontSize: 22,
+    fontWeight: "500",
+    marginTop: 18,
+    letterSpacing: 2,
+  },
+  disclaimerBlock: {
+    paddingBottom: 40,
+  },
+  disclaimerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  disclaimerTitle: {
+    color: "rgba(255, 255, 255, 0.75)",
+    fontSize: 24,
+    fontWeight: "400",
+    fontFamily: "Poppins",
+  },
+  disclaimerText: {
+    color: "rgba(255, 255, 255, 0.75)",
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: "Inter",
+    fontWeight: "300",
+  },
+  personCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 30,
+    flexDirection: "row",
+    alignItems: "center",
+    width: "95%",
+    maxWidth: 360,
+    minHeight: 140,
+  },
+  personImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 16,
+  },
+  personImagePlaceholder: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 16,
+    backgroundColor: "#FF6B00",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  personImageText: {
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  personInfo: {
+    flex: 1,
+  },
+  personName: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 6,
+  },
+  emailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  personEmail: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    marginLeft: 8,
+    opacity: 0.9,
+  },
+  // Property Report Styles
+  headerGradient: {
+    paddingHorizontal: 20,
+    paddingTop: 0,
+    paddingBottom: 10,
+    marginHorizontal: -20,
+  },
+  header: {
+    marginTop: 0,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  headerTitle: {
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontWeight: "600",
+  },
+  headerSub: {
+    color: "#9CA3AF",
+    fontSize: 10,
+    marginTop: 4,
+  },
+  logoWrap: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  logoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  logoCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#FF6B00",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 6,
+  },
+  logoL: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+  },
+  logoText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  divider: {
+    height: 1,
+    marginVertical: 20,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(245, 245, 245, 0.75)",
+    borderStyle: "dashed",
+  },
+  propertyName: {
+    color: "#F1FE74",
+    fontSize: 22,
+    fontWeight: "600",
+  },
+  builder: {
+    color: "#9CA3AF",
+    fontSize: 13,
+    marginTop: 4,
+  },
+  price: {
+    color: "#FFFFFF",
+    fontSize: 26,
+    fontWeight: "700",
+  },
+  priceContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 16,
+  },
+  dirhamIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 8,
+  },
+  dirhamSymbol: {
+    color: "#FFFFFF",
+    fontSize: 26,
+    fontWeight: "700",
+    marginRight: 8,
+  },
+  ratingRow: {
+    flexDirection: "row",
+    marginTop: 30,
+    alignItems: "center",
+  },
+  ratingContainer: {
+    width: 54,
+    height: 54,
+    marginRight: 16,
+    position: "relative",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  ratingCircleBackground: {
+    position: "absolute",
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    borderWidth: 4,
+    borderColor: "#5E6272",
+  },
+  ratingCircleProgress: {
+    position: "absolute",
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    borderWidth: 4,
+    borderColor: "transparent",
+    borderTopColor: "#F1FE74",
+    borderRightColor: "#F1FE74",
+    borderBottomColor: "#F1FE74",
+    transform: [{ rotate: "135deg" }],
+  },
+  ratingCircleInner: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: "#0F1115",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+  },
+  ratingText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  ratingDesc: {
+    color: "#F5F5F5",
+    fontSize: 13,
+    flex: 1,
+    lineHeight: 18,
+  },
+  sectionTitle: {
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontWeight: "600",
+    marginTop: 30,
+    marginBottom: 16,
+  },
+  detailsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  detailItem: {
+    alignItems: "center",
+    flex: 1,
+  },
+  detailValue: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "400",
+  },
+  detailValueNoIcon: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  detailSub: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    marginTop: 6,
+    fontWeight: "400",
+  },
+  card: {
+    backgroundColor: "#27292D",
+    borderRadius: 14,
+    marginTop: 12,
+    padding: 16,
+    marginHorizontal: -12,
+  },
+  exitTabs: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  exitTab: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontFamily: "Inter-Medium",
+    fontWeight: "900",
+  },
+  exitTabActive: {
+    color: "#F1FE74",
+    fontWeight: "900",
+    fontSize: 13,
+  },
+  table: {
+    borderTopWidth: 1,
+    borderTopColor: "#2A2E35",
+  },
+  tableRow: {
+    flexDirection: "row",
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#2A2E35",
+  },
+  tableLeft: {
+    flex: 1.4,
+  },
+  tableTitle: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  tableCol: {
+    flex: 1.3,
+    alignItems: "flex-end",
+  },
+  percent: {
+    color: "rgba(255, 255, 255, 0.75)",
+    fontSize: 14,
+    fontWeight: "400",
+    fontFamily: "Inter-Regular",
+  },
+  amount: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    marginTop: 4,
+    fontWeight: "500",
+    fontFamily: "Inter-Medium",
+  },
+  // Payment Timeline Styles
+  title: {
+    color: "#FFFFFF",
+    fontSize: 22,
+    fontWeight: "600",
+    textAlign: "center",
+    marginTop: 20,
+    marginBottom: 30,
+  },
+  legendRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 20,
+    marginBottom: 24,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  legendText: {
+    color: "rgba(245, 245, 245, 0.75)",
+    fontSize: 12,
+    fontFamily: "Inter",
+    fontWeight: "400",
+  },
+  headerRow: {
+    flexDirection: "row",
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1E2128",
+    marginBottom: 10,
+  },
+  headerText: {
+    color: "rgba(245, 245, 245, 0.75)",
+    fontSize: 15,
+    fontFamily: "Inter",
+    fontWeight: "600",
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    gap: 25,
+  },
+  date: {
+    flex: 2,
+    color: "#C9CCD1",
+    fontSize: 13,
+  },
+  timelineCol: {
+    width: 24,
+    alignItems: "center",
+    marginLeft: -70,
+  },
+  dottedLine: {
+    position: "absolute",
+    top: 14,
+    width: 1,
+    height: 36,
+    borderLeftWidth: 1,
+    borderLeftColor: "#3A3D45",
+    borderStyle: "dashed",
+  },
+  grayDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#A3A6AD",
+  },
+  greenDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#8DFF3F",
+  },
+  iconCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 0,
+    borderWidth: 0,
+    borderColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  step: {
+    width: 30,
+    color: "#8B8F97",
+    fontSize: 12,
+    textAlign: "center",
+    marginLeft: -10,
+  },
+  percentTimeline: {
+    flex: 2,
+    color: "#C9CCD1",
+    fontSize: 13,
+  },
+  amountTimeline: {
+    flex: 1,
+    color: "#C9CCD1",
+    fontSize: 13,
+    textAlign: "right",
   },
 });

@@ -146,16 +146,7 @@ export default function RatingCardScreen() {
           <TouchableOpacity
             style={styles.nextButton}
             onPress={() => {
-              // Save ratings data and complete project
-              const store = useProjectStore.getState();
-              const tempProject = store.tempProject;
-              if (tempProject) {
-                store.updateProject(tempProject._id, {
-                  ratings: scores
-                });
-                // Complete the project (move from temp to main)
-                store.completeProject(tempProject._id);
-              }
+              // Form data is collected - your senior will handle backend integration
               router.push('/home');
             }}
           >

@@ -79,16 +79,6 @@ export default function PaymentDetailsScreen() {
   // State for managing the custom dropdown
   const [activeDropdownId, setActiveDropdownId] = useState(null);
 
-  // --- Load existing data on mount ---
-  React.useEffect(() => {
-    const tempProject = useProjectStore.getState().tempProject;
-    if (tempProject && tempProject.paymentPlan && tempProject.paymentPlan.installments) {
-      setInstallments(tempProject.paymentPlan.installments);
-      setFlipAt(tempProject.paymentPlan.flipAtPercent ? `${tempProject.paymentPlan.flipAtPercent}%` : "35%");
-      setHandoverAt(tempProject.paymentPlan.handoverAtPercent ? `${tempProject.paymentPlan.handoverAtPercent}%` : "70%");
-    }
-  }, []);
-
   // --- Computed Values ---
   const totalPercent = useMemo(() => {
     return installments.reduce((acc, curr) => acc + (Number(curr.percent) || 0), 0);
@@ -104,7 +94,7 @@ export default function PaymentDetailsScreen() {
   };
 
   const validatePercentage = (total) => {
-    return total > 100;
+    return total !== 100;
   };
 
   // Update validation states when values change
@@ -370,14 +360,14 @@ export default function PaymentDetailsScreen() {
                   {/* Percentage Input */}
                   <View style={styles.percentInputWrapper}>
                     <TextInput
-                      style={[styles.percentInput, totalPercent > 100 && styles.percentInputError]}
+                      style={[styles.percentInput, totalPercent !== 100 && styles.percentInputError]}
                       value={String(inst.percent)}
                       onChangeText={(text) => updateInstallment(inst.id, 'percent', Number(text))}
                       placeholder="0"
                       placeholderTextColor="#64748b"
                       keyboardType="numeric"
                     />
-                    <Text style={[styles.percentSuffix, totalPercent > 100 && styles.percentSuffixError]}>%</Text>
+                    <Text style={[styles.percentSuffix, totalPercent !== 100 && styles.percentSuffixError]}>%</Text>
                   </View>
 
                   {/* Type Dropdown / Label */}
@@ -461,7 +451,7 @@ export default function PaymentDetailsScreen() {
             )}
 
             {/* Percentage Error Message - appears after all installments */}
-            {totalPercent > 100 && installments.length > 0 && (
+            {totalPercent !== 100 && installments.length > 0 && (
               <Text style={styles.percentageErrorTextEnd}>
                 (percentage must be equal to 100%)
               </Text>
@@ -485,23 +475,7 @@ export default function PaymentDetailsScreen() {
                 if (percentageError) {
                   return;
                 }
-                // Save payment plan data to the temp project
-                const store = useProjectStore.getState();
-                const tempProject = store.tempProject;
-                if (tempProject) {
-                  const flipAtNum = parseInt(flipAt.replace('%', '')) || 0;
-                  const handoverAtNum = parseInt(handoverAt.replace('%', '')) || 0;
-                  store.updateProject(tempProject._id, {
-                    paymentPlan: {
-                      duringConstructionPercent: flipAtNum,
-                      onHandoverPercent: handoverAtNum,
-                      postHandoverPercent: 0,
-                      flipAtPercent: flipAtNum,
-                      handoverAtPercent: handoverAtNum,
-                      installments: installments,
-                    }
-                  });
-                }
+                // Form data is collected - your senior will handle backend integration
                 router.push('/form3');
               }}
             >

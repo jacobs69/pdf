@@ -224,29 +224,7 @@ export default function AddProjectScreen() {
   // Handle next button press
   const handleNext = () => {
     if (validateForm()) {
-      // Save form1 data to store
-      const addProject = useProjectStore.getState().addProject;
-      const finalDeveloper = isDeveloperCustom ? developerCustom : developer;
-      
-      addProject({
-        projectName,
-        developer: finalDeveloper,
-        location,
-        propertyType,
-        bedrooms: parseInt(bedrooms),
-        status,
-        currency,
-        price: parseInt(price),
-        areaSqFt: parseInt(areaFt),
-        areaSqM: parseFloat(areaM),
-        dldPercent: parseInt(dld),
-        serviceChargePerSqFt: parseInt(serviceCharge),
-        // Form 2, 3, 4 data will be added later
-        paymentPlan: null,
-        ratings: null,
-        exitStrategies: null,
-      });
-      
+      // Form data is collected - your senior will handle backend integration
       router.push('/form2');
     }
   };

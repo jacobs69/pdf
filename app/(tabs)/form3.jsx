@@ -155,35 +155,7 @@ export default function ProjectionsScreen() {
           {/* Next Button - Now part of scroll content */}
           <View style={styles.nextButtonContainer}>
             <TouchableOpacity style={styles.nextButton} onPress={() => {
-              // Save exit strategies data to temp project
-              const store = useProjectStore.getState();
-              const tempProject = store.tempProject;
-              if (tempProject) {
-                store.updateProject(tempProject._id, {
-                  exitStrategies: {
-                    stp: {
-                      moderate: { percent: '0%', val: 'AED 0' },
-                      conservative: { percent: conservative, val: 'AED 0' },
-                      optimistic: { percent: optimistic, val: 'AED 0' }
-                    },
-                    mtp: {
-                      moderate: { percent: '0%', val: 'AED 0' },
-                      conservative: { percent: conservative, val: 'AED 0' },
-                      optimistic: { percent: optimistic, val: 'AED 0' }
-                    },
-                    ltp: {
-                      moderate: { percent: '0%', val: 'AED 0' },
-                      conservative: { percent: conservative, val: 'AED 0' },
-                      optimistic: { percent: optimistic, val: 'AED 0' }
-                    }
-                  },
-                  projections: {
-                    yoyGrowthBeforeHandover: parseInt(yoyBefore.replace('%', '')) || 0,
-                    yoyGrowthAfterHandover: parseInt(yoyPost.replace('%', '')) || 0,
-                    rentalYieldPercent: parseInt(rentalYield.replace('%', '')) || 0
-                  }
-                });
-              }
+              // Form data is collected - your senior will handle backend integration
               router.push('/form4');
             }}>
               <Text style={styles.nextButtonText}>Next</Text>
